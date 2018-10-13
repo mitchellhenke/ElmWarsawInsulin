@@ -1,8 +1,8 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
-import Html exposing (Html, div, h1, img, input, text)
-import Html.Attributes exposing (placeholder, src, step, type_, value)
+import Html exposing (Html, div, form, h1, h2, input, label, text)
+import Html.Attributes exposing (class, for, placeholder, src, step, type_, value)
 import Html.Events exposing (onInput)
 
 
@@ -125,16 +125,31 @@ calculateEverything carbs fats proteins carbRatio =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [] [ text "Carbohydrates (g)" ]
-        , input [ placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), type_ "number", step "0.1", onInput ChangeCarbohydrate ] []
-        , div [] [ text "Fat (g)" ]
-        , input [ placeholder "Fat (g)", value (renderMaybeFloat model.gramsFat), type_ "number", step "0.1", onInput ChangeFat ] []
-        , div [] [ text "Protein (g)" ]
-        , input [ placeholder "Protein (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ] []
-        , div [] [ text ("Now: " ++ String.fromFloat model.bolusNow) ]
-        , div [] [ text ("Later: " ++ String.fromFloat model.bolusLater) ]
-        , div [] [ text ("Hours: " ++ String.fromFloat model.bolusHours) ]
+    div [ class "container" ]
+        [ h1 [] [ text "Calculator" ]
+        , form []
+            [ div [ class "form-group" ]
+                [ label [ for "carbs" ] [ text "Carbohydrates (g)" ]
+                , input
+                    [ class "form-control", placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), type_ "number", step "0.1", onInput ChangeCarbohydrate ]
+                    []
+                ]
+            , div [ class "form-group" ]
+                [ label [ for "fats" ] [ text "Fats (g)" ]
+                , input
+                    [ class "form-control", placeholder "Fats (g)", value (renderMaybeFloat model.gramsFat), type_ "number", step "0.1", onInput ChangeFat ]
+                    []
+                ]
+            , div [ class "form-group" ]
+                [ label [ for "proteins" ] [ text "Proteins (g)" ]
+                , input
+                    [ class "form-control", placeholder "Proteins (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ]
+                    []
+                ]
+            ]
+        , h2 [] [ text ("Now: " ++ String.fromFloat model.bolusNow) ]
+        , h2 [] [ text ("Later: " ++ String.fromFloat model.bolusLater) ]
+        , h2 [] [ text ("Hours: " ++ String.fromFloat model.bolusHours ++ "h") ]
         ]
 
 
