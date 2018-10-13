@@ -11,9 +11,9 @@ import Html.Events exposing (onInput)
 
 
 type alias Model =
-    { gramsCarbohydrate : Float
-    , gramsFat : Float
-    , gramsProtein : Float
+    { gramsCarbohydrate : Maybe Float
+    , gramsFat : Maybe Float
+    , gramsProtein : Maybe Float
     , carbRatio : Float
     , bolusNow : Float
     , bolusLater : Float
@@ -23,9 +23,9 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { gramsCarbohydrate = 0.0
-      , gramsFat = 0.0
-      , gramsProtein = 0.0
+    ( { gramsCarbohydrate = Just 0.0
+      , gramsFat = Just 0.0
+      , gramsProtein = Just 0.0
       , carbRatio = 10.0
       , bolusNow = 0.0
       , bolusLater = 0.0
@@ -50,71 +50,73 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeCarbohydrate carbohydrates ->
-            let
-                gramsCarbohydrate =
-                    Maybe.withDefault 0.0 (String.toFloat carbohydrates)
-            in
-            update Recalculate { model | gramsCarbohydrate = gramsCarbohydrate }
+            update Recalculate { model | gramsCarbohydrate = String.toFloat carbohydrates }
 
         ChangeFat fats ->
-            let
-                gramsFat =
-                    Maybe.withDefault 0.0 (String.toFloat fats)
-            in
-            update Recalculate { model | gramsFat = gramsFat }
+            update Recalculate { model | gramsFat = String.toFloat fats }
 
         ChangeProtein proteins ->
-            let
-                gramsProtein =
-                    Maybe.withDefault 0.0 (String.toFloat proteins)
-            in
-            update Recalculate { model | gramsProtein = gramsProtein }
+            update Recalculate { model | gramsProtein = String.toFloat proteins }
 
         Recalculate ->
-            let
-                carbUnits =
-                    model.gramsCarbohydrate / 10
+            case ( model.gramsCarbohydrate, model.gramsFat, model.gramsProtein ) of
+                ( Just carbs, Just fats, Just proteins ) ->
+                    let
+                        ( bolusNow, bolusLater, bolusHours ) =
+                            calculateEverything carbs fats proteins model.carbRatio
+                    in
+                    ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, Cmd.none )
 
-                fatProteinUnits =
-                    ((model.gramsFat * 9) + (model.gramsProtein * 4)) / 100
+                _ ->
+                    ( { model | bolusNow = 0.0, bolusLater = 0.0, bolusHours = 0.0 }, Cmd.none )
 
-                carbUnitsPercentage =
-                    carbUnits / (carbUnits + fatProteinUnits)
 
-                bolusNow =
-                    if carbUnitsPercentage < 0.2 then
-                        0.0
+calculateEverything : Float -> Float -> Float -> Float -> ( Float, Float, Float )
+calculateEverything carbs fats proteins carbRatio =
+    let
+        carbUnits =
+            carbs / 10
 
-                    else
-                        carbUnits * 10 / model.carbRatio
+        fatProteinUnits =
+            ((fats * 9) + (proteins * 4)) / 100
 
-                bolusLater =
-                    if fatProteinUnits < 1.0 then
-                        0.0
+        carbUnitsPercentage =
+            carbUnits / (carbUnits + fatProteinUnits)
 
-                    else if carbUnitsPercentage <= 0.8 then
-                        fatProteinUnits * 10 / model.carbRatio
+        bolusNow =
+            if carbUnitsPercentage < 0.2 then
+                0.0
 
-                    else
-                        0.0
+            else
+                carbUnits * 10 / carbRatio
 
-                bolusHours =
-                    if fatProteinUnits < 1.0 || carbUnitsPercentage > 0.8 then
-                        0.0
+        bolusLater =
+            if fatProteinUnits < 1.0 then
+                0.0
 
-                    else if fatProteinUnits < 2.0 then
-                        3.0
+            else if carbUnitsPercentage <= 0.8 then
+                fatProteinUnits * 10 / carbRatio
 
-                    else if fatProteinUnits < 3.0 then
-                        4.0
+            else
+                0.0
 
-                    else if fatProteinUnits < 4.0 then
-                        5.0
+        bolusHours =
+            if fatProteinUnits < 1.0 || carbUnitsPercentage > 0.8 then
+                0.0
 
-                    else
-                        8.0
-            in
-            ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, Cmd.none )
+            else if fatProteinUnits < 2.0 then
+                3.0
+
+            else if fatProteinUnits < 3.0 then
+                4.0
+
+            else if fatProteinUnits < 4.0 then
+                5.0
+
+            else
+                8.0
+    in
+    ( bolusNow, bolusLater, bolusHours )
 
 
 
@@ -125,15 +127,24 @@ view : Model -> Html Msg
 view model =
     div []
         [ div [] [ text "Carbohydrates (g)" ]
-        , input [ placeholder "Carbohydrates (g)", value (String.fromFloat model.gramsCarbohydrate), onInput ChangeCarbohydrate ] []
+        , input [ placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), onInput ChangeCarbohydrate ] []
         , div [] [ text "Fat (g)" ]
-        , input [ placeholder "Fat (g)", value (String.fromFloat model.gramsFat), onInput ChangeFat ] []
+        , input [ placeholder "Fat (g)", value (renderMaybeFloat model.gramsFat), onInput ChangeFat ] []
         , div [] [ text "Protein (g)" ]
-        , input [ placeholder "Protein (g)", value (String.fromFloat model.gramsProtein), onInput ChangeProtein ] []
+        , input [ placeholder "Protein (g)", value (renderMaybeFloat model.gramsProtein), onInput ChangeProtein ] []
         , div [] [ text ("Now: " ++ String.fromFloat model.bolusNow) ]
         , div [] [ text ("Later: " ++ String.fromFloat model.bolusLater) ]
         , div [] [ text ("Hours: " ++ String.fromFloat model.bolusHours) ]
         ]
+
+
+renderMaybeFloat maybeFloat =
+    case maybeFloat of
+        Just float ->
+            String.fromFloat float
+
+        Nothing ->
+            ""
 
 
 
