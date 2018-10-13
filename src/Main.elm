@@ -14,7 +14,7 @@ type alias Model =
     { gramsCarbohydrate : Maybe Float
     , gramsFat : Maybe Float
     , gramsProtein : Maybe Float
-    , carbRatio : Float
+    , carbRatio : Maybe Float
     , bolusNow : Float
     , bolusLater : Float
     , bolusHours : Float
@@ -26,7 +26,7 @@ init =
     ( { gramsCarbohydrate = Nothing
       , gramsFat = Nothing
       , gramsProtein = Nothing
-      , carbRatio = 10.0
+      , carbRatio = Just 10.0
       , bolusNow = 0.0
       , bolusLater = 0.0
       , bolusHours = 0.0
@@ -43,6 +43,7 @@ type Msg
     = ChangeCarbohydrate String
     | ChangeFat String
     | ChangeProtein String
+    | ChangeCarbRatio String
     | Recalculate
 
 
@@ -58,12 +59,15 @@ update msg model =
         ChangeProtein proteins ->
             update Recalculate { model | gramsProtein = String.toFloat proteins }
 
+        ChangeCarbRatio ratio ->
+            update Recalculate { model | carbRatio = String.toFloat ratio }
+
         Recalculate ->
-            case ( model.gramsCarbohydrate, model.gramsFat, model.gramsProtein ) of
-                ( Just carbs, Just fats, Just proteins ) ->
+            case [ model.gramsCarbohydrate, model.gramsFat, model.gramsProtein, model.carbRatio ] of
+                [ Just carbs, Just fats, Just proteins, Just carbRatio ] ->
                     let
                         ( bolusNow, bolusLater, bolusHours ) =
-                            calculateEverything carbs fats proteins model.carbRatio
+                            calculateEverything carbs fats proteins carbRatio
                     in
                     ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, Cmd.none )
 
@@ -144,6 +148,12 @@ view model =
                 [ label [ for "proteins" ] [ text "Proteins (g)" ]
                 , input
                     [ class "form-control", placeholder "Proteins (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ]
+                    []
+                ]
+            , div [ class "form-group" ]
+                [ label [ for "carbRatio" ] [ text "Carb Ratio" ]
+                , input
+                    [ class "form-control", placeholder "Carb Ratio", value (renderMaybeFloat model.carbRatio), type_ "number", step "0.1", onInput ChangeCarbRatio ]
                     []
                 ]
             ]
