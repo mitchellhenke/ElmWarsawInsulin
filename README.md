@@ -2,7 +2,7 @@
 
 An Elm web implementation of the algorithm described in "Bolus Calculator with Nutrition Database Software, a New Concept of Prandial Insulin Programming for Pump Users"
 
-Running live [here](https://warsaw.netlify.com/)
+Running live [https://warsaw.netlify.com/](https://warsaw.netlify.com/)
 
 Bootstrapped with [Create Elm App](https://github.com/halfzebra/create-elm-app)
 
