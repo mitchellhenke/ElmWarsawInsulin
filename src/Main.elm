@@ -23,9 +23,9 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { gramsCarbohydrate = Just 0.0
-      , gramsFat = Just 0.0
-      , gramsProtein = Just 0.0
+    ( { gramsCarbohydrate = Nothing
+      , gramsFat = Nothing
+      , gramsProtein = Nothing
       , carbRatio = 10.0
       , bolusNow = 0.0
       , bolusLater = 0.0
