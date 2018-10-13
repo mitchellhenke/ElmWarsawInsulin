@@ -1,8 +1,8 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
-import Html exposing (Html, div, form, h1, h2, input, label, text)
-import Html.Attributes exposing (class, for, placeholder, src, step, type_, value)
+import Html exposing (Html, a, div, form, h1, h2, hr, input, label, span, text)
+import Html.Attributes exposing (class, for, href, placeholder, src, step, type_, value)
 import Html.Events exposing (onInput)
 
 
@@ -150,6 +150,11 @@ view model =
         , h2 [] [ text ("Now: " ++ String.fromFloat model.bolusNow) ]
         , h2 [] [ text ("Later: " ++ String.fromFloat model.bolusLater) ]
         , h2 [] [ text ("Hours: " ++ String.fromFloat model.bolusHours ++ "h") ]
+        , div []
+            [ hr [] []
+            , span [] [ text "Source Code: " ]
+            , a [ href "https://github.com/mitchellhenke/ElmWarsawInsulin" ] [ text "https://github.com/mitchellhenke/ElmWarsawInsulin" ]
+            ]
         ]
 
 
