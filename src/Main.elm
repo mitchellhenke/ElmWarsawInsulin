@@ -130,40 +130,44 @@ calculateEverything carbs fats proteins carbRatio =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ h1 [] [ text "Calculator" ]
-        , form []
-            [ div [ class "form-group" ]
-                [ label [ for "carbs" ] [ text "Carbohydrates (g)" ]
-                , input
-                    [ class "form-control", placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), type_ "number", step "0.1", onInput ChangeCarbohydrate ]
-                    []
+        [ div [ class "row" ] [ div [ class "col-sm-12" ] [ h1 [] [ text "Calculator" ] ] ]
+        , div [ class "row" ]
+            [ div [ class "col-sm-12" ]
+                [ form []
+                    [ div [ class "form-group" ]
+                        [ label [ for "carbs" ] [ text "Carbohydrates (g)" ]
+                        , input
+                            [ class "form-control", placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), type_ "number", step "0.1", onInput ChangeCarbohydrate ]
+                            []
+                        ]
+                    , div [ class "form-group" ]
+                        [ label [ for "fats" ] [ text "Fats (g)" ]
+                        , input
+                            [ class "form-control", placeholder "Fats (g)", value (renderMaybeFloat model.gramsFat), type_ "number", step "0.1", onInput ChangeFat ]
+                            []
+                        ]
+                    , div [ class "form-group" ]
+                        [ label [ for "proteins" ] [ text "Proteins (g)" ]
+                        , input
+                            [ class "form-control", placeholder "Proteins (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ]
+                            []
+                        ]
+                    , div [ class "form-group" ]
+                        [ label [ for "carbRatio" ] [ text "Carb Ratio" ]
+                        , input
+                            [ class "form-control", placeholder "Carb Ratio", value (renderMaybeFloat model.carbRatio), type_ "number", step "0.1", onInput ChangeCarbRatio ]
+                            []
+                        ]
+                    ]
+                , h2 [] [ text ("Now: " ++ renderMaybeFloat (Just model.bolusNow)) ]
+                , h2 [] [ text ("Later: " ++ renderMaybeFloat (Just model.bolusLater)) ]
+                , h2 [] [ text ("Hours: " ++ renderMaybeFloat (Just model.bolusHours) ++ "h") ]
+                , div []
+                    [ hr [] []
+                    , span [] [ text "Source Code: " ]
+                    , a [ href "https://github.com/mitchellhenke/ElmWarsawInsulin" ] [ text "https://github.com/mitchellhenke/ElmWarsawInsulin" ]
+                    ]
                 ]
-            , div [ class "form-group" ]
-                [ label [ for "fats" ] [ text "Fats (g)" ]
-                , input
-                    [ class "form-control", placeholder "Fats (g)", value (renderMaybeFloat model.gramsFat), type_ "number", step "0.1", onInput ChangeFat ]
-                    []
-                ]
-            , div [ class "form-group" ]
-                [ label [ for "proteins" ] [ text "Proteins (g)" ]
-                , input
-                    [ class "form-control", placeholder "Proteins (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ]
-                    []
-                ]
-            , div [ class "form-group" ]
-                [ label [ for "carbRatio" ] [ text "Carb Ratio" ]
-                , input
-                    [ class "form-control", placeholder "Carb Ratio", value (renderMaybeFloat model.carbRatio), type_ "number", step "0.1", onInput ChangeCarbRatio ]
-                    []
-                ]
-            ]
-        , h2 [] [ text ("Now: " ++ String.fromFloat model.bolusNow) ]
-        , h2 [] [ text ("Later: " ++ String.fromFloat model.bolusLater) ]
-        , h2 [] [ text ("Hours: " ++ String.fromFloat model.bolusHours ++ "h") ]
-        , div []
-            [ hr [] []
-            , span [] [ text "Source Code: " ]
-            , a [ href "https://github.com/mitchellhenke/ElmWarsawInsulin" ] [ text "https://github.com/mitchellhenke/ElmWarsawInsulin" ]
             ]
         ]
 
@@ -171,7 +175,30 @@ view model =
 renderMaybeFloat maybeFloat =
     case maybeFloat of
         Just float ->
-            String.fromFloat float
+            let
+                string =
+                    String.fromFloat float
+
+                splitString =
+                    String.split "." string
+
+                first =
+                    List.head splitString
+
+                end =
+                    List.tail splitString
+
+                final =
+                    case ( first, end ) of
+                        ( Just integerPart, Just [ floatPart ] ) ->
+                            integerPart
+                                ++ "."
+                                ++ String.left 2 floatPart
+
+                        _ ->
+                            string
+            in
+            final
 
         Nothing ->
             ""
