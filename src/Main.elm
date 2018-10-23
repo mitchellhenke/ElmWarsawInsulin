@@ -1,9 +1,12 @@
-module Main exposing (Model, Msg(..), init, main, update, view)
+port module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
 import Html exposing (Html, a, div, form, h1, h2, hr, input, label, span, text)
-import Html.Attributes exposing (class, for, href, placeholder, src, step, type_, value)
+import Html.Attributes exposing (class, for, href, placeholder, src, value)
 import Html.Events exposing (onInput)
+
+
+port carbRatioCache : String -> Cmd msg
 
 
 
@@ -11,22 +14,22 @@ import Html.Events exposing (onInput)
 
 
 type alias Model =
-    { gramsCarbohydrate : Maybe Float
-    , gramsFat : Maybe Float
-    , gramsProtein : Maybe Float
-    , carbRatio : Maybe Float
+    { gramsCarbohydrate : String
+    , gramsFat : String
+    , gramsProtein : String
+    , carbRatio : String
     , bolusNow : Float
     , bolusLater : Float
     , bolusHours : Float
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { gramsCarbohydrate = Nothing
-      , gramsFat = Nothing
-      , gramsProtein = Nothing
-      , carbRatio = Just 10.0
+init : String -> ( Model, Cmd Msg )
+init cached =
+    ( { gramsCarbohydrate = ""
+      , gramsFat = ""
+      , gramsProtein = ""
+      , carbRatio = cached
       , bolusNow = 0.0
       , bolusLater = 0.0
       , bolusHours = 0.0
@@ -44,35 +47,39 @@ type Msg
     | ChangeFat String
     | ChangeProtein String
     | ChangeCarbRatio String
-    | Recalculate
+    | Recalculate (Cmd Msg)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeCarbohydrate carbohydrates ->
-            update Recalculate { model | gramsCarbohydrate = String.toFloat carbohydrates }
+            update (Recalculate Cmd.none) { model | gramsCarbohydrate = carbohydrates }
 
         ChangeFat fats ->
-            update Recalculate { model | gramsFat = String.toFloat fats }
+            update (Recalculate Cmd.none) { model | gramsFat = fats }
 
         ChangeProtein proteins ->
-            update Recalculate { model | gramsProtein = String.toFloat proteins }
+            update (Recalculate Cmd.none) { model | gramsProtein = proteins }
 
         ChangeCarbRatio ratio ->
-            update Recalculate { model | carbRatio = String.toFloat ratio }
+            let
+                updatedModel =
+                    { model | carbRatio = ratio }
+            in
+            update (Recalculate (carbRatioCache ratio)) updatedModel
 
-        Recalculate ->
-            case [ model.gramsCarbohydrate, model.gramsFat, model.gramsProtein, model.carbRatio ] of
+        Recalculate cmd ->
+            case [ String.toFloat model.gramsCarbohydrate, String.toFloat model.gramsFat, String.toFloat model.gramsProtein, String.toFloat model.carbRatio ] of
                 [ Just carbs, Just fats, Just proteins, Just carbRatio ] ->
                     let
                         ( bolusNow, bolusLater, bolusHours ) =
                             calculateEverything carbs fats proteins carbRatio
                     in
-                    ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, Cmd.none )
+                    ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, cmd )
 
                 _ ->
-                    ( { model | bolusNow = 0.0, bolusLater = 0.0, bolusHours = 0.0 }, Cmd.none )
+                    ( { model | bolusNow = 0.0, bolusLater = 0.0, bolusHours = 0.0 }, cmd )
 
 
 calculateEverything : Float -> Float -> Float -> Float -> ( Float, Float, Float )
@@ -137,31 +144,31 @@ view model =
                     [ div [ class "form-group" ]
                         [ label [ for "carbs" ] [ text "Carbohydrates (g)" ]
                         , input
-                            [ class "form-control", placeholder "Carbohydrates (g)", value (renderMaybeFloat model.gramsCarbohydrate), type_ "number", step "0.1", onInput ChangeCarbohydrate ]
+                            [ class "form-control", placeholder "Carbohydrates (g)", value model.gramsCarbohydrate, onInput ChangeCarbohydrate ]
                             []
                         ]
                     , div [ class "form-group" ]
                         [ label [ for "fats" ] [ text "Fats (g)" ]
                         , input
-                            [ class "form-control", placeholder "Fats (g)", value (renderMaybeFloat model.gramsFat), type_ "number", step "0.1", onInput ChangeFat ]
+                            [ class "form-control", placeholder "Fats (g)", value model.gramsFat, onInput ChangeFat ]
                             []
                         ]
                     , div [ class "form-group" ]
                         [ label [ for "proteins" ] [ text "Proteins (g)" ]
                         , input
-                            [ class "form-control", placeholder "Proteins (g)", value (renderMaybeFloat model.gramsProtein), type_ "number", step "0.1", onInput ChangeProtein ]
+                            [ class "form-control", placeholder "Proteins (g)", value model.gramsProtein, onInput ChangeProtein ]
                             []
                         ]
                     , div [ class "form-group" ]
                         [ label [ for "carbRatio" ] [ text "Carb Ratio" ]
                         , input
-                            [ class "form-control", placeholder "Carb Ratio", value (renderMaybeFloat model.carbRatio), type_ "number", step "0.1", onInput ChangeCarbRatio ]
+                            [ class "form-control", placeholder "Carb Ratio", value model.carbRatio, onInput ChangeCarbRatio ]
                             []
                         ]
                     ]
-                , h2 [] [ text ("Now: " ++ renderMaybeFloat (Just model.bolusNow)) ]
-                , h2 [] [ text ("Later: " ++ renderMaybeFloat (Just model.bolusLater)) ]
-                , h2 [] [ text ("Hours: " ++ renderMaybeFloat (Just model.bolusHours) ++ "h") ]
+                , h2 [] [ text ("Now: " ++ renderFloat model.bolusNow) ]
+                , h2 [] [ text ("Later: " ++ renderFloat model.bolusLater) ]
+                , h2 [] [ text ("Hours: " ++ renderFloat model.bolusHours ++ "h") ]
                 , div []
                     [ a [ href "https://github.com/mitchellhenke/ElmWarsawInsulin" ] [ text "Source Code" ]
                     ]
@@ -170,47 +177,42 @@ view model =
         ]
 
 
-renderMaybeFloat maybeFloat =
-    case maybeFloat of
-        Just float ->
-            let
-                string =
-                    String.fromFloat float
+renderFloat float =
+    let
+        string =
+            String.fromFloat float
 
-                splitString =
-                    String.split "." string
+        splitString =
+            String.split "." string
 
-                first =
-                    List.head splitString
+        first =
+            List.head splitString
 
-                end =
-                    List.tail splitString
+        end =
+            List.tail splitString
 
-                final =
-                    case ( first, end ) of
-                        ( Just integerPart, Just [ floatPart ] ) ->
-                            integerPart
-                                ++ "."
-                                ++ String.left 2 floatPart
+        final =
+            case ( first, end ) of
+                ( Just integerPart, Just [ floatPart ] ) ->
+                    integerPart
+                        ++ "."
+                        ++ String.left 2 floatPart
 
-                        _ ->
-                            string
-            in
-            final
-
-        Nothing ->
-            ""
+                _ ->
+                    string
+    in
+    final
 
 
 
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = always Sub.none
         }
