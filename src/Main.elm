@@ -21,6 +21,15 @@ type alias Model =
     , bolusNow : Float
     , bolusLater : Float
     , bolusHours : Float
+    , fatProteinUnits : Float
+    }
+
+
+type alias CalculationResult =
+    { bolusNow : Float
+    , bolusLater : Float
+    , bolusHours : Float
+    , fatProteinUnits : Float
     }
 
 
@@ -33,6 +42,7 @@ init cached =
       , bolusNow = 0.0
       , bolusLater = 0.0
       , bolusHours = 0.0
+      , fatProteinUnits = 0.0
       }
     , Cmd.none
     )
@@ -73,16 +83,16 @@ update msg model =
             case [ String.toFloat model.gramsCarbohydrate, String.toFloat model.gramsFat, String.toFloat model.gramsProtein, String.toFloat model.carbRatio ] of
                 [ Just carbs, Just fats, Just proteins, Just carbRatio ] ->
                     let
-                        ( bolusNow, bolusLater, bolusHours ) =
+                        { bolusNow, bolusLater, bolusHours, fatProteinUnits } =
                             calculateEverything carbs fats proteins carbRatio
                     in
-                    ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours }, cmd )
+                    ( { model | bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours, fatProteinUnits = fatProteinUnits }, cmd )
 
                 _ ->
-                    ( { model | bolusNow = 0.0, bolusLater = 0.0, bolusHours = 0.0 }, cmd )
+                    ( { model | bolusNow = 0.0, bolusLater = 0.0, bolusHours = 0.0, fatProteinUnits = 0.0 }, cmd )
 
 
-calculateEverything : Float -> Float -> Float -> Float -> ( Float, Float, Float )
+calculateEverything : Float -> Float -> Float -> Float -> CalculationResult
 calculateEverything carbs fats proteins carbRatio =
     let
         carbUnits =
@@ -127,7 +137,7 @@ calculateEverything carbs fats proteins carbRatio =
             else
                 8.0
     in
-    ( bolusNow, bolusLater, bolusHours )
+    { bolusNow = bolusNow, bolusLater = bolusLater, bolusHours = bolusHours, fatProteinUnits = fatProteinUnits * 10 }
 
 
 
@@ -166,9 +176,10 @@ view model =
                             []
                         ]
                     ]
-                , h2 [] [ text ("Now: " ++ renderFloat model.bolusNow) ]
-                , h2 [] [ text ("Later: " ++ renderFloat model.bolusLater) ]
+                , h2 [] [ text ("Now: " ++ renderFloat model.bolusNow ++ "u") ]
+                , h2 [] [ text ("Later: " ++ renderFloat model.bolusLater ++ "u") ]
                 , h2 [] [ text ("Hours: " ++ renderFloat model.bolusHours ++ "h") ]
+                , h2 [] [ text ("Fat/Protein Units: " ++ renderFloat model.fatProteinUnits ++ "g") ]
                 , div []
                     [ a [ href "https://github.com/mitchellhenke/ElmWarsawInsulin" ] [ text "Source Code" ]
                     ]
